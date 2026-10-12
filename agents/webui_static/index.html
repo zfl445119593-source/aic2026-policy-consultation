@@ -118,7 +118,7 @@
       </div>
       <div class="actions">
         <button class="primary" id="go">开始会诊</button>
-        <span class="hint" id="hint">由本地七个智能体真实协作完成，全程约 2~4 分钟</span>
+        <span class="hint" id="goHint">检测运行模式…</span>
       </div>
     </div>
 
@@ -172,17 +172,33 @@ function mdLite(t){
 }
 
 /* ---- 在线状态 ---- */
+let MODE = "platform";
 async function health(){
   try{
     const r = await (await fetch("/api/health")).json();
+    MODE = r.mode || "platform";
     const up = Object.values(r.roles).filter(x=>x.up).length;
-    $("htext").textContent = `七人团在线 ${up}/7`;
-    $("hdot").className = "dot" + (up===7?" all":"");
     const wb = $("warnbar");
-    if(up<7){ wb.style.display="block";
-      wb.innerHTML = "⚠ 有智能体不在线（"+up+"/7）。会诊前请先启动：<code>./start_all.sh</code>（缺的是 "+
-        Object.entries(r.roles).filter(([k,v])=>!v.up).map(([k,v])=>v.name).join("、")+"）";
-    } else wb.style.display="none";
+    if(MODE==="local"){
+      $("htext").textContent = `本地直连（测试）· 就绪 ${up}/6`;
+      $("hdot").className = "dot" + (up>=6?" all":"");
+      $("goHint").textContent = "本地直连（测试辅助）：无需平台身份，同进程直调；正式形态=平台互联模式";
+      if(up<6 || !r.llm_ready){
+        const missing = Object.entries(r.roles).filter(([k,v])=>!v.up).map(([k,v])=>v.name);
+        wb.style.display="block";
+        wb.innerHTML = "⚠ 本地直连模式就绪 "+up+"/6（"+(missing.join("、")||"大模型配置")+" 未就绪）。"
+          +"请在 agents 目录 <code>cp llm.env.example llm.env</code> 填入 API 密钥后重启 webui"
+          +"（联网检索还需 SEARCH_API_KEY）。";
+      } else wb.style.display="none";
+    }else{
+      $("htext").textContent = `七人团在线 ${up}/7`;
+      $("hdot").className = "dot" + (up===7?" all":"");
+      $("goHint").textContent = "平台互联：由本地七个智能体真实 mTLS 跨进程协作，全程约 2~4 分钟";
+      if(up<7){ wb.style.display="block";
+        wb.innerHTML = "⚠ 有智能体不在线（"+up+"/7）。会诊前请先启动：<code>./start_all.sh</code>（缺的是 "+
+          Object.entries(r.roles).filter(([k,v])=>!v.up).map(([k,v])=>v.name).join("、")+"）";
+      } else wb.style.display="none";
+    }
     renderTeam(r.roles);
   }catch(e){ $("htext").textContent="控制台后端未响应"; }
 }
@@ -198,8 +214,8 @@ $("go").onclick = async () => {
   const r = await fetch("/api/consult",{method:"POST",headers:{"Content-Type":"application/json"},
                                         body:JSON.stringify({question:q})});
   const j = await r.json();
-  if(!r.ok){ $("hint").textContent = j.error||"发起失败"; return; }
-  $("go").disabled = true; $("hint").textContent = "会诊进行中…请保持本页打开";
+  if(!r.ok){ $("goHint").textContent = j.error||"发起失败"; return; }
+  $("go").disabled = true; $("goHint").textContent = "会诊进行中…请保持本页打开";
   $("resultCard").style.display="none"; $("progressCard").style.display="block";
   $("phases").innerHTML=""; $("roles").innerHTML=""; $("feed").innerHTML=""; lastLen=0;
   PHASES.forEach(([id,no,label],i)=>renderPhase(i,"wait"));
@@ -261,7 +277,7 @@ function addRole(role,state,name,extra){
 }
 
 function finish(s){
-  $("go").disabled=false; $("hint").textContent="由本地七个智能体真实协作完成，全程约 2~4 分钟";
+  $("go").disabled=false; health();
   $("resultCard").style.display="block";
   if(s.error){ $("errbox").style.display="block"; $("errbox").textContent="会诊失败："+s.error;
     $("letter").style.display="none"; $("collapses").innerHTML=""; $("rmeta").textContent=""; return; }
