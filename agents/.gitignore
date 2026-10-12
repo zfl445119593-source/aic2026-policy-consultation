@@ -1,0 +1,49 @@
+# 密钥与本地配置 —— 绝不入库
+llm.env
+*.env
+!.gitignore
+
+# 身份与注册敏感材料（含AIC/隧道地址/账号快照，入库版一律用 example 模板）
+aics.local.json
+AICS.md
+registry_records.json
+host_save.json
+disc_check.json
+
+# 运行时产物（工作区含证书私钥/AMP账本/任务库/发现缓存）
+workspaces/
+consultations/
+*.tmp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# 系统杂物
+Thumbs.db
+.DS_Store
+.idea/
+
+# 证书与信任束（机器相关，不入库）
+*.pem
+
+# 运行日志与状态
+*.log
+fluent-bit-state/
+
+# 临时/探针/抓存文件
+_*.*
+.wit/
+
+# 本地开发辅助件（不入库：仓库只保留最小可运行实例）
+engine.py
+engine_platform.py
+run_consultation.py
+smoke_test.py
+test_live.py
+acps.sh
+pytest.ini
+fluent-bit.conf
+tests/

@@ -1,0 +1,10 @@
+{
+  "_comment": "本队成员AIC身份表模板。复制为 aics.local.json 后，把每个角色登记领证后的真实AIC填进来。host.py（委派专家）、statute.py（委派检索官）、engine_platform.py（联调引擎）都会在启动时读取它。",
+  "host": "<主持的AIC，如 1.2.156.xxxx.OOOO.xxxx.xxxx.xxxx>",
+  "statute": "<条文核查官的AIC>",
+  "advisor": "<落地顾问的AIC>",
+  "challenger": "<风险审查官的AIC>",
+  "arbiter": "<仲裁官的AIC>",
+  "persona": "<用户代言人的AIC>",
+  "researcher": "<政策原文检索官的AIC>"
+}
