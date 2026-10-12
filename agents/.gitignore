@@ -47,3 +47,4 @@ acps.sh
 pytest.ini
 fluent-bit.conf
 tests/
+.claude/

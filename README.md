@@ -70,7 +70,10 @@ source llm.env && source .acps.env
 # 4) 一键启动（7个智能体 + AMP转发器）
 ./start_all.sh
 
-# 5) 调用：在梧桐平台"叮当"里 @会诊主持
+# 5) 本地 Web 控制台（推荐）：浏览器里提问、看三阶段进度、读意见书
+source llm.env && ../.venv/Scripts/python.exe webui.py    # 打开 http://127.0.0.1:9300
+
+# 也可在梧桐平台"叮当"里 @会诊主持 使用
 ```
 
 ## 目录结构
@@ -81,6 +84,7 @@ source llm.env && source .acps.env
 │   ├── serve.py            # 多角色服务进程（直连+群组双协议监听）
 │   ├── enroll_role.py      # 注册状态机（领证）
 │   ├── amp_forwarder.py / amp_message_emitter.py   # AMP日志→平台计量链路
+│   ├── webui.py + webui_static/  # 本地 Web 控制台（三阶段进度+意见书+历史）
 │   └── start_all.sh        # 一键启动
 └── README.md
 ```
