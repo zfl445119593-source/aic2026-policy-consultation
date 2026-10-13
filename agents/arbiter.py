@@ -22,12 +22,26 @@ def confidence_schema(answers_json: str) -> str:
     """answers: [{"expert","conclusion","confidence"(0-1),"citation_ok"(bool)}]"""
     try:
         answers = json.loads(answers_json)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, TypeError):
         return "输入不是合法JSON"
-    confs = [a.get("confidence", 0) for a in answers]
-    avg = round(mean(confs), 2) if confs else 0
-    spread = round(max(confs) - min(confs), 2) if confs else 0
-    no_cite = [a["expert"] for a in answers if not a.get("citation_ok")]
+    if isinstance(answers, dict):  # 传成单个对象或包装对象时归一为列表
+        answers = answers.get("answers") or answers.get("专家独立结论") or [answers]
+    if not isinstance(answers, list) or not answers:
+        return '输入应为对象数组：[{"expert","conclusion","confidence","citation_ok"}]'
+
+    def _num(a: dict, key: str) -> float:
+        try:
+            return float(a.get(key) or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    answers = [a for a in answers if isinstance(a, dict)]
+    if not answers:
+        return '输入应为对象数组：[{"expert","conclusion","confidence","citation_ok"}]'
+    confs = [_num(a, "confidence") for a in answers]
+    avg = round(mean(confs), 2)
+    spread = round(max(confs) - min(confs), 2)
+    no_cite = [a.get("expert", "未命名") for a in answers if not a.get("citation_ok")]
     verdict = "高共识" if spread <= 0.2 and avg >= 0.7 else ("存在分歧" if spread > 0.3 else "中等共识")
     return json.dumps({
         "共识度": verdict,
