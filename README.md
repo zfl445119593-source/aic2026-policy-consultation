@@ -107,9 +107,10 @@ source llm.env && ../.venv/Scripts/python.exe webui.py    # 打开 http://127.0.
 │   ├── rtbase.py           # 共享配置：平台接入/端点拓扑/Windows补丁/步数预算钩子
 │   ├── serve.py            # 多角色服务进程（直连+群组双协议监听）
 │   ├── enroll_role.py      # 注册状态机（领证）
-│   ├── amp_forwarder.py      # AMP日志→平台计量上报（官方Fluent Bit链路的Windows等价实现）
+│   ├── amp_forwarder.py    # AMP日志→平台计量上报（官方Fluent Bit链路的Windows等价实现）
 │   ├── webui.py + webui_static/  # 本地 Web 控制台（三阶段进度+意见书+历史）
 │   └── start_all.sh        # 一键启动
+├── examples/               # 真实会诊案例存档（含跨队智能体调用记录）
 └── README.md
 ```
 
