@@ -48,3 +48,4 @@ pytest.ini
 fluent-bit.conf
 tests/
 .claude/
+amp_message_emitter.py

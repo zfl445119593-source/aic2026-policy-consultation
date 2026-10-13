@@ -17,7 +17,7 @@
 |---|---|
 | serve.py | 多角色服务进程：直连(mTLS JSON-RPC)+群组(AMQP)双协议监听 |
 | enroll_role.py | 注册状态机：对接过审记录并领取证书 |
-| amp_forwarder.py / amp_message_emitter.py | AMP 账本 → 平台计量上报链路（心跳/访问/消息） |
+| amp_forwarder.py | AMP 账本（心跳/访问/系统）→ 平台 Kafka 上报：官方 Fluent Bit 链路的 Windows 等价实现 |
 | webui.py + webui_static/ | 本地 Web 控制台：浏览器发起会诊，三阶段进度可视、意见书渲染、历史查阅（`source llm.env && ../.venv/Scripts/python.exe webui.py` → http://127.0.0.1:9300） |
 | start_all.sh | 一键启动（幂等：已在跑的进程跳过） |
 
