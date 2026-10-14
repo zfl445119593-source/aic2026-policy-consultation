@@ -26,6 +26,13 @@ else
     echo "[start_all] 转发器已在运行，跳过"
 fi
 
+if [ -f amp_message_emitter.py ] && [ "$(alive 'amp_message_emitter')" = "0" ]; then
+    nohup $PY -u amp_message_emitter.py >> emitter.log 2>&1 &
+    echo "[start_all] 消息适配器已拉起"
+else
+    echo "[start_all] 适配器已在运行或本机未启用，跳过"
+fi
+
 if [ "$(alive 'webui.py')" = "0" ]; then
     nohup $PY -u webui.py >> webui.log 2>&1 &
     echo "[start_all] Web控制台已拉起: http://127.0.0.1:9300"
