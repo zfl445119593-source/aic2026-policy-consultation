@@ -1,10 +1,10 @@
 #!/bin/bash
 # 一键拉起全栈：serve(7智能体) + amp_forwarder(日志→Kafka) + webui
 # 注意：cpolar 隧道由队友自行在 cpolar 界面启动，本脚本不碰
-# 用法（Git Bash，任意目录）: bash /e/CTF/wit/agents/start_all.sh
+# 用法（Git Bash，任意目录）: bash agents/start_all.sh 或 ./start_all.sh
 # 场景：重启电脑后 / 崩溃恢复后。铁律：日志和offsets文件一律不删（转发器自动断点续传）
-cd /e/CTF/wit/agents || exit 1
-source llm.env
+cd "$(dirname "$0")" || exit 1
+if [ -f llm.env ]; then . ./llm.env; else echo "[start_all] 未找到 llm.env（先 cp llm.env.example llm.env 并填写）"; fi
 
 PY=../.venv/Scripts/python.exe
 
