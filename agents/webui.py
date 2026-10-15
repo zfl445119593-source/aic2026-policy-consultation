@@ -74,7 +74,19 @@ def _prod_text(p) -> str:
 
 
 def platform_identity_ready() -> bool:
-    return (HOST_WS / "acps").exists()
+    """是否已真正领证（具备可用的平台身份）。
+
+    判据是"证书材料是否落盘"，而不是"workspaces/host/acps 目录是否存在"。
+    因为 ACS 草稿（acs.draft.json）与候选 ACS（acs.candidate.json）也写在这个目录里，
+    只看目录会让"生成过草稿、尚未领证"的机器被误判为平台互联模式，
+    本地直连测试随即失败（实测：AipError: Partner has no discovered Direct JSON-RPC endpoint）。
+    证书材料按后缀识别（.pem/.crt/.key），不依赖 SDK 内部的具体文件名。
+    """
+    acps_dir = HOST_WS / "acps"
+    if not acps_dir.is_dir():
+        return False
+    return any(p.suffix.lower() in {".pem", ".crt", ".key"}
+               for p in acps_dir.rglob("*") if p.is_file())
 
 
 def choose_mode() -> str:
@@ -167,7 +179,10 @@ class ConsultEngine:
             research_task = self._ask_local(
                 "researcher",
                 f"【原文检索】用户问题：{question}\n"
-                "请检索与该问题直接相关的政策文件（国家部委+所在省市层面），给出条款级原文摘录+来源网址+发布日期+权威度分级。")
+                "请检索与该问题直接相关的政策文件（国家部委+所在省市层面），给出条款级原文摘录+来源网址+发布日期+权威度分级。",
+                # 检索官要"搜索→抓取→再搜索"多轮：沿用默认 16 步实测会 StepBudgetExhausted，
+                # 靠重试才拿到结果（单角色耗时 9.5 分钟）。平台模式给的是 40 步，这里对齐。
+                max_steps=40)
         else:
             research_task = asyncio.sleep(0, result="[未配置 SEARCH_API_KEY（博查），跳过联网检索]")
         others = asyncio.gather(
@@ -216,8 +231,12 @@ class ConsultEngine:
             "请输出三段式仲裁意见（共识结论/存在分歧/待核实项 + 下一步行动清单），并回应代言人的追问。", max_steps=14)
 
         result = {"question": question, "phase1": p1, "phase2": p2, "phase2b": p2b,
-                  "phase3": p3, "meta": {"finished_at": datetime.now().isoformat(timespec="seconds"),
-                                         "engine": "local"}}
+                  "phase3": p3,
+                  # 检索官的取证报告：此前只拼进条文核查官的提示词用掉、不落盘，
+                  # 复盘/举证时看不到"到底抓了哪几份政策文件"，故原样存档。
+                  "research": research_report,
+                  "meta": {"finished_at": datetime.now().isoformat(timespec="seconds"),
+                           "engine": "local"}}
         self._save(result)
         self._emit("phase", phase="done", label="会诊完成 · 已交付《会诊意见书》（本地直连模式）")
         return result
