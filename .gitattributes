@@ -1,0 +1,7 @@
+# 容器部署相关文件必须保持 LF：CRLF 会让 sh 脚本在 Linux/容器内解析失败
+# （Windows 上 core.autocrlf=true 时，git 检出会把文本转成 CRLF，故显式声明）
+Dockerfile            text eol=lf
+docker-compose.yml    text eol=lf
+.dockerignore         text eol=lf
+docker/*.sh           text eol=lf
+docker/*.py           text eol=lf
