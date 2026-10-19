@@ -37,6 +37,9 @@ import rtbase
 from wit import AgentState, RunConfig, TextPart, WitRuntime
 
 PORT = int(os.environ.get("WEBUI_PORT", "9300"))
+# 监听地址：默认仅回环；容器化部署时用 WEBUI_BIND_HOST=0.0.0.0，
+# 否则 docker 的端口映射进不来（容器内 127.0.0.1 ≠ 宿主可达）。
+BIND_HOST = os.environ.get("WEBUI_BIND_HOST", "127.0.0.1")
 STATIC_DIR = AGENTS_DIR / "webui_static"
 HOST_WS = Path("workspaces/host")
 ENGINE_WS = Path("workspaces/webui_host")
@@ -439,8 +442,9 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     STATIC_DIR.mkdir(exist_ok=True)
-    httpd = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    print(f"[webui] 政策会诊控制台已启动: http://127.0.0.1:{PORT}  (Ctrl+C 退出)")
+    httpd = ThreadingHTTPServer((BIND_HOST, PORT), Handler)
+    shown = "127.0.0.1" if BIND_HOST in ("0.0.0.0", "") else BIND_HOST
+    print(f"[webui] 政策会诊控制台已启动: http://{shown}:{PORT}  (监听 {BIND_HOST}:{PORT}, Ctrl+C 退出)")
     print("[webui] 前提: serve 七角色在运行(./start_all.sh)；首次会诊会自动复制主持身份到独立工作区")
     try:
         httpd.serve_forever()

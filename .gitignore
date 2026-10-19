@@ -4,3 +4,6 @@
 demo/
 docs/
 *.whl
+
+# Docker 一键部署产生的运行日志（容器写入宿主 ./logs）
+logs/

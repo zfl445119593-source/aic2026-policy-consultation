@@ -1,0 +1,23 @@
+# ---- 构建上下文裁剪（只影响 docker build，与 .gitignore 无关）----
+# 密钥与身份材料：绝不打进镜像，运行时用 bind mount 注入
+agents/llm.env
+agents/.acps.env
+agents/aics.local.json
+agents/workspaces
+agents/consultations
+agents/fluent-bit-state
+agents/*.log
+agents/acps.sh
+
+# 本机运行时产物
+.venv
+.git
+.gitignore
+logs
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+.DS_Store
+Thumbs.db
+
+# 说明：两个平台框架 wheel 必须保留在上下文里（builder 阶段要装）

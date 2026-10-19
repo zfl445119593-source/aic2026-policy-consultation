@@ -1,0 +1,78 @@
+# AIC2026 政策会诊 · 一键部署
+#
+#   docker compose up -d --build      # 构建并后台启动
+#   docker compose logs -f            # 跟日志
+#   docker compose down               # 停止（保留卷中的数据）
+#
+# 前置准备（首次）：
+#   cp agents/llm.env.example agents/llm.env          # 填大模型/检索密钥 + AGENT_TUNNEL
+#   cp agents/aics.local.example.json agents/aics.local.json   # 领证后回填七个 AIC
+#
+# 端口说明：
+#   9101 = 会诊主持对外端点，cpolar 的 TCP 隧道指向它
+#   9300 = WebUI 控制台
+#   9102-9107 是队内伙伴端口，按设计只允许容器内访问，故意不发布。
+
+name: aic2026-policy-consultation
+
+services:
+  aic:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aic2026-policy-consultation:dev
+    container_name: aic-policy-consultation
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 25s
+
+    ports:
+      # 默认只绑回环：cpolar 在本机，127.0.0.1 已足够；WebUI 无鉴权，别默认暴露到局域网。
+      # 需要给同网段访问时：AIC_BIND_ADDR=0.0.0.0 docker compose up -d
+      - "${AIC_BIND_ADDR:-127.0.0.1}:${AIC_HOST_PORT:-9101}:9101"
+      - "${AIC_BIND_ADDR:-127.0.0.1}:${AIC_WEBUI_PORT:-9300}:9300"
+
+    environment:
+      TZ: Asia/Shanghai
+      # 容器内必须监听 0.0.0.0，否则端口映射进不来（伙伴端口不会被发布）
+      AGENT_PUBLIC_HOST: "0.0.0.0"
+      # WebUI 也必须监听 0.0.0.0，否则容器内 127.0.0.1 的监听无法被端口映射到宿主
+      WEBUI_BIND_HOST: "0.0.0.0"
+      PYTHONUNBUFFERED: "1"
+      PYTHONIOENCODING: "utf-8"
+      AIC_LOG_DIR: /app/logs
+      # 需要强制本地直连模式时取消注释：
+      # WEBUI_LOCAL: "1"
+
+    volumes:
+      # ---- 配置（只读，不打进镜像）----
+      - type: bind
+        source: ./agents/llm.env
+        target: /app/agents/llm.env
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./agents/aics.local.json
+        target: /app/agents/aics.local.json
+        read_only: true
+        bind:
+          create_host_path: false
+      # ---- 运行时状态（可写，宿主侧可见）----
+      - ./agents/workspaces:/app/agents/workspaces
+      - ./agents/consultations:/app/agents/consultations
+      - ./agents/fluent-bit-state:/app/agents/fluent-bit-state
+      - ./logs:/app/logs
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:9300/api/health', timeout=4).status == 200 else 1)"]
+      interval: 30s
+      timeout: 6s
+      start_period: 45s
+      retries: 3
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

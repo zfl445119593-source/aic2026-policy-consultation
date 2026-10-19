@@ -83,6 +83,54 @@ source llm.env && ../.venv/Scripts/python.exe webui.py    # 打开 http://127.0.
 # 也可在梧桐平台"叮当"里 @会诊主持 使用
 ```
 
+## Docker 一键部署（可选）
+
+不想手动装 venv 时，用 Docker 起整套服务：七个智能体 + AMP 转发器 + WebUI **在同一个容器内**。
+
+**为什么是一个容器**：七个角色之间用 `https://<role>.127-0-0-1.nip.io:910x` 互访，该域名解析到 `127.0.0.1`；拆成多个容器后各自解析到自己，伙伴端点会全部失联。因此队内伙伴端口只在容器内可见，对外只发布两个端口。
+
+### 前置
+
+1. Docker Desktop（或 Docker Engine + Compose v2）
+2. 两个平台框架 wheel 放在仓库根目录（与手动安装相同）
+3. 复制并填写配置：
+
+```bash
+cp agents/llm.env.example agents/llm.env                    # 填模型/检索密钥 + AGENT_TUNNEL
+cp agents/aics.local.example.json agents/aics.local.json     # 领证后回填七个 AIC
+```
+
+`llm.env` 至少要填 `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` 和 `AGENT_TUNNEL`；后者缺失时容器会启动即报错退出并给出提示。
+
+### 启动
+
+```bash
+docker compose up -d --build
+docker compose ps          # STATUS 变成 healthy 即可
+docker compose logs -f     # 三路日志分别带 [serve] / [forwarder] / [webui] 前缀
+```
+
+| 地址 | 用途 |
+|---|---|
+| http://127.0.0.1:9300 | WebUI 控制台 |
+| 127.0.0.1:9101 | 会诊主持对外端点，cpolar 的 TCP 隧道指向这里 |
+| 9102-9107 | 队内伙伴端口，仅容器内可达（按设计不发布） |
+
+默认只绑定回环地址；需要同网段访问时用 `AIC_BIND_ADDR=0.0.0.0 docker compose up -d`。
+
+### 停止与数据
+
+```bash
+docker compose down
+```
+
+容器**只读**挂载 `agents/llm.env`、`agents/aics.local.json`（密钥与身份不进镜像），**可写**挂载 `agents/workspaces`、`agents/consultations`、`agents/fluent-bit-state`、`logs`，`down` 之后数据仍留在宿主。
+
+### 说明
+
+- 未领证时 `serve` 会以 `blocked: acps_identity_not_active` 启动且不监听端口（与手动部署一致）；此时 WebUI 自动回落到本地直连模式，可直接体验会诊流程。
+- 领证仍建议在宿主侧用 `enroll_role.py` 完成：证书写入 `agents/workspaces`，容器共享同一目录，重启容器即可生效。
+
 ## 两种运行模式
 
 **作品的正式形态是平台互联模式**：七个智能体各自持有平台身份，经真实 AIP 协议跨进程互联（mTLS 双向认证），产生平台账本与排行榜数据——这是比赛要求的核心能力。**本地直连模式只是测试辅助**：为方便拉取仓库后快速体验界面与协作逻辑，同进程直调，不产生任何平台互联数据。
